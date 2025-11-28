@@ -250,21 +250,14 @@
     }
 
     function loadNextQuestion() {
-    // This button just provides a smooth transition
-    // The server should have already sent the next question automatically
-    // If no next question was received, we need to request it manually
+        // The server will send the next question automatically
+        // This button just hides the feedback section temporarily
+        document.getElementById('feedbackSection').style.display = 'none';
+        document.getElementById('questionSection').style.display = 'block';
 
-    // Hide feedback and show question section
-    document.getElementById('feedbackSection').style.display = 'none';
-    document.getElementById('questionSection').style.display = 'block';
-
-    // If no next question was received within 2 seconds, show a message
-    setTimeout(() => {
-        if (document.getElementById('questionText').textContent === '') {
-            console.log('No next question received - might need manual request');
-        }
-    }, 2000);
-}
+        // Clear any feedback content
+        document.getElementById('feedbackContent').innerHTML = '';
+    }
 
     function showFinalResults(data) {
         document.getElementById('feedbackSection').style.display = 'none';
