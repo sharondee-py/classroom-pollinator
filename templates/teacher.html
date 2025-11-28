@@ -145,6 +145,7 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -169,7 +170,7 @@
                     <label class="form-label">Question</label>
                     <textarea class="form-control question-text" rows="2" placeholder="Enter your question..."></textarea>
                 </div>
-                
+
                 <div class="options-container">
                     <div class="row">
                         <div class="col-md-6 mb-2">
@@ -198,7 +199,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row mt-3">
                     <div class="col-md-6">
                         <label class="form-label">Correct Answer</label>
@@ -232,7 +233,7 @@
     function createQuiz() {
         const title = document.getElementById('quizTitle').value || 'Classroom Quiz';
         const questions = [];
-        
+
         document.querySelectorAll('.question-card').forEach(card => {
             const questionText = card.querySelector('.question-text').value;
             const options = Array.from(card.querySelectorAll('.option-text'))
@@ -240,7 +241,7 @@
                                 .filter(value => value.trim() !== '');
             const correctAnswer = parseInt(card.querySelector('.correct-answer').value);
             const explanation = card.querySelector('.explanation-text').value;
-            
+
             if (questionText && options.length === 4 && options.every(opt => opt.trim() !== '')) {
                 questions.push({
                     text: questionText,
@@ -250,7 +251,7 @@
                 });
             }
         });
-        
+
         if (questions.length > 0) {
             socket.emit('create_quiz', {
                 title: title,
@@ -264,8 +265,17 @@
     function copyLink() {
         const linkInput = document.getElementById('shareableLink');
         linkInput.select();
-        document.execCommand('copy');
-        alert('Link copied to clipboard!');
+        try {
+            document.execCommand('copy');
+            alert('Link copied to clipboard!');
+        } catch (e) {
+            // fallback
+            navigator.clipboard && navigator.clipboard.writeText(linkInput.value).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(() => {
+                alert('Copy failed. Select and copy manually.');
+            });
+        }
     }
 
     socket.on('quiz_created', function(data) {
@@ -274,19 +284,21 @@
         document.getElementById('activeQuizSection').style.display = 'block';
         document.getElementById('createdQuizTitle').textContent = document.getElementById('quizTitle').value || 'Classroom Quiz';
         document.getElementById('shareableLink').value = window.location.origin + data.share_url;
-        
+
         // Join the quiz room to monitor progress
         socket.emit('join_quiz', { quiz_code: currentQuizCode });
     });
 
     socket.on('quiz_results', function(data) {
         document.getElementById('studentCount').textContent = data.total_students;
-        
+
         // Calculate average score
         if (data.total_students > 0) {
             const totalScore = Object.values(data.results).reduce((sum, student) => sum + student.score, 0);
             const average = (totalScore / data.total_students).toFixed(1);
             document.getElementById('averageScore').textContent = average;
+        } else {
+            document.getElementById('averageScore').textContent = '-';
         }
     });
 
