@@ -69,7 +69,7 @@
 {% block scripts %}
 <script>
     function joinQuiz() {
-        const quizCode = document.getElementById('quizCodeInput').value.toUpperCase().trim();
+        const quizCode = document.getElementById('quizCodeInput').value.toUpperCase();
         if (quizCode.length === 6) {
             window.location.href = `/quiz/${quizCode}`;
         } else {
@@ -78,24 +78,20 @@
     }
 
     function tryDemo() {
-        // Quick demo: redirect to a fixed demo code (teacher can create one)
-        // For now we simply show a helpful message.
+        // You could create a demo quiz code here, or redirect to a pre-made demo
         alert('Demo feature coming soon! For now, ask your teacher for a quiz code.');
     }
 
     // Auto-uppercase input
-    const quizCodeInput = document.getElementById('quizCodeInput');
-    if (quizCodeInput) {
-        quizCodeInput.addEventListener('input', function(e) {
-            this.value = this.value.toUpperCase();
-        });
+    document.getElementById('quizCodeInput').addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
+    });
 
-        // Allow Enter key to submit
-        quizCodeInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                joinQuiz();
-            }
-        });
-    }
+    // Allow Enter key to submit
+    document.getElementById('quizCodeInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            joinQuiz();
+        }
+    });
 </script>
 {% endblock %}

@@ -102,7 +102,7 @@
     let totalQuestions = 0;
     let currentScore = 0;
 
-    // Immediately attempt to join the quiz room
+    // Join quiz immediately
     socket.emit('join_quiz', { quiz_code: quizCode });
 
     socket.on('quiz_started', function(data) {
@@ -115,8 +115,6 @@
     });
 
     socket.on('next_question', function(data) {
-        // Server will send next question after submit
-        // Hide feedback and show question once data arrives
         document.getElementById('feedbackSection').style.display = 'none';
         document.getElementById('questionSection').style.display = 'block';
         currentScore = data.score;
@@ -131,29 +129,11 @@
         showFinalResults(data);
     });
 
-    function clearOptionStates() {
-        // Remove any feedback/selection classes from any lingering option elements
-        document.querySelectorAll('.option-btn').forEach(btn => {
-            btn.classList.remove('correct-answer', 'incorrect-answer', 'selected');
-            btn.style.pointerEvents = 'auto';
-        });
-    }
-
     function loadQuestion(question, questionNumber) {
-        // --- SAFELY RESET UI & STATE TO PREVENT "COLOR GHOSTING" ---
-        clearOptionStates();
-        document.getElementById('feedbackContent').innerHTML = '';
-        // Hide feedback section if visible
-        document.getElementById('feedbackSection').style.display = 'none';
-        // Ensure question section is visible
-        document.getElementById('questionSection').style.display = 'block';
-
-        // Reset selection and button
-        selectedOption = null;
-        document.getElementById('submitBtn').disabled = true;
-
-        // Update state
         currentQuestionIndex = questionNumber - 1;
+        selectedOption = null;
+
+        // Update progress
         document.getElementById('currentQuestion').textContent = questionNumber;
         document.getElementById('totalQuestions').textContent = totalQuestions;
         document.getElementById('currentScore').textContent = currentScore;
@@ -164,76 +144,76 @@
         // Set question text
         document.getElementById('questionText').textContent = question.text;
 
-        // Build options from scratch (guaranteed empty container)
+        // Create options - COMPLETELY RESET the container
         const optionsContainer = document.getElementById('optionsContainer');
-        optionsContainer.innerHTML = '';
+        optionsContainer.innerHTML = ''; // This clears any previous options completely
 
         question.options.forEach((option, index) => {
             const optionDiv = document.createElement('div');
-            optionDiv.className = 'option-btn';
-            optionDiv.dataset.index = index;
+            optionDiv.className = 'option-btn'; // Start with clean class - no 'selected'
             optionDiv.innerHTML = `
                 <div class="d-flex align-items-center">
                     <span class="badge bg-secondary me-3">${String.fromCharCode(65 + index)}</span>
                     <span class="flex-grow-1">${option}</span>
                 </div>
             `;
-            // click handler -- uses element reference closure
-            optionDiv.addEventListener('click', () => selectOption(index, optionDiv));
-            // ensure pointer events are enabled (defensive)
-            optionDiv.style.pointerEvents = 'auto';
+            optionDiv.onclick = () => selectOption(index, optionDiv);
             optionsContainer.appendChild(optionDiv);
+        });
+
+        // Reset submit button
+        document.getElementById('submitBtn').disabled = true;
+
+        // Re-enable pointer events (in case they were disabled from previous question)
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.style.pointerEvents = 'auto';
         });
     }
 
     function selectOption(index, element) {
-        // clear selected class from all current options
-        document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-        // add selected class to the clicked option
+        // Remove selected class from all options
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        // Add selected class to clicked option
         element.classList.add('selected');
         selectedOption = index;
         document.getElementById('submitBtn').disabled = false;
     }
 
     function submitAnswer() {
-        if (selectedOption === null) return;
+        if (selectedOption !== null) {
+            socket.emit('submit_answer', {
+                quiz_code: quizCode,
+                question_index: currentQuestionIndex,
+                answer_index: selectedOption
+            });
 
-        socket.emit('submit_answer', {
-            quiz_code: quizCode,
-            question_index: currentQuestionIndex,
-            answer_index: selectedOption
-        });
-
-        // Immediately disable option interaction for this question to avoid double clicks
-        document.querySelectorAll('.option-btn').forEach(btn => {
-            btn.style.pointerEvents = 'none';
-        });
-        document.getElementById('submitBtn').disabled = true;
+            // Disable further selection for THIS question only
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+            });
+            document.getElementById('submitBtn').disabled = true;
+        }
     }
 
     function showFeedback(data) {
-        // Hide question area and show feedback area
         document.getElementById('questionSection').style.display = 'none';
         document.getElementById('feedbackSection').style.display = 'block';
 
-        // Defensive: ensure options reference the last rendered question options
+        const feedbackContent = document.getElementById('feedbackContent');
         const options = document.querySelectorAll('.option-btn');
 
-        // Clear any prior classes (so old classes are gone regardless)
-        options.forEach(opt => opt.classList.remove('correct-answer', 'incorrect-answer', 'selected'));
-
-        const feedbackContent = document.getElementById('feedbackContent');
-        feedbackContent.innerHTML = '';
-
         if (data.is_correct) {
-            feedbackContent.innerHTML += `
+            feedbackContent.innerHTML = `
                 <div class="alert alert-success">
                     <h4><i class="fas fa-check-circle me-2"></i>Correct! 🎉</h4>
                     <p class="mb-0">Well done! You got it right.</p>
                 </div>
             `;
         } else {
-            feedbackContent.innerHTML += `
+            feedbackContent.innerHTML = `
                 <div class="alert alert-danger">
                     <h4><i class="fas fa-times-circle me-2"></i>Not Quite Right</h4>
                     <p class="mb-2">The correct answer was <strong>${String.fromCharCode(65 + data.correct_answer)}</strong></p>
@@ -241,7 +221,7 @@
             `;
         }
 
-        // Add explanation if provided
+        // Add explanation
         if (data.explanation) {
             feedbackContent.innerHTML += `
                 <div class="alert alert-info">
@@ -251,37 +231,36 @@
             `;
         }
 
-        // Highlight current options for feedback (defensive: check bounds)
-        options.forEach((optionEl, index) => {
-            // remove classes just in case
-            optionEl.classList.remove('correct-answer', 'incorrect-answer');
+        // Highlight options for FEEDBACK only (this doesn't affect next question)
+        options.forEach((option, index) => {
+            // First remove any existing feedback classes
+            option.classList.remove('correct-answer', 'incorrect-answer');
+
+            // Then add the appropriate class
             if (index === data.your_answer) {
                 if (data.is_correct) {
-                    optionEl.classList.add('correct-answer');
+                    option.classList.add('correct-answer');
                 } else {
-                    optionEl.classList.add('incorrect-answer');
+                    option.classList.add('incorrect-answer');
                 }
+            } else if (index === data.correct_answer) {
+                option.classList.add('correct-answer');
             }
-            if (index === data.correct_answer) {
-                optionEl.classList.add('correct-answer');
-            }
-            // disable clicks on feedback view
-            optionEl.style.pointerEvents = 'none';
         });
     }
 
     function loadNextQuestion() {
-        // Clear feedback UI immediately to avoid visual carryover
-        document.getElementById('feedbackContent').innerHTML = '';
+        // The server will send the next question automatically
+        // This button just hides the feedback section temporarily
         document.getElementById('feedbackSection').style.display = 'none';
-        // The server should have pushed the next question already (via 'next_question').
-        // If not, keep the questionSection visible and let socket.next_question handle it.
         document.getElementById('questionSection').style.display = 'block';
+
+        // Clear any feedback content
+        document.getElementById('feedbackContent').innerHTML = '';
     }
 
     function showFinalResults(data) {
         document.getElementById('feedbackSection').style.display = 'none';
-        document.getElementById('questionSection').style.display = 'none';
         document.getElementById('resultsSection').style.display = 'block';
 
         document.getElementById('finalScore').textContent = data.score;

@@ -145,7 +145,6 @@
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
@@ -265,17 +264,8 @@
     function copyLink() {
         const linkInput = document.getElementById('shareableLink');
         linkInput.select();
-        try {
-            document.execCommand('copy');
-            alert('Link copied to clipboard!');
-        } catch (e) {
-            // fallback
-            navigator.clipboard && navigator.clipboard.writeText(linkInput.value).then(() => {
-                alert('Link copied to clipboard!');
-            }).catch(() => {
-                alert('Copy failed. Select and copy manually.');
-            });
-        }
+        document.execCommand('copy');
+        alert('Link copied to clipboard!');
     }
 
     socket.on('quiz_created', function(data) {
@@ -297,8 +287,6 @@
             const totalScore = Object.values(data.results).reduce((sum, student) => sum + student.score, 0);
             const average = (totalScore / data.total_students).toFixed(1);
             document.getElementById('averageScore').textContent = average;
-        } else {
-            document.getElementById('averageScore').textContent = '-';
         }
     });
 
