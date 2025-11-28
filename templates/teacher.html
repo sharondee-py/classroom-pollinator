@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Dashboard - Classroom Pollinator{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="quiz-card bg-white p-4">
+            <div class="text-center mb-4">
+                <h1 class="display-4 fw-bold text-primary">
+                    <i class="fas fa-chalkboard-teacher me-3"></i>
+                    Classroom Pollinator
+                </h1>
+                <p class="lead text-muted">Create engaging, self-paced quizzes for your students</p>
+            </div>
+
+            <div id="createQuizSection">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Quiz</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Quiz Title</label>
+                            <input type="text" class="form-control form-control-lg" id="quizTitle" placeholder="Enter quiz title...">
+                        </div>
+                        
+                        <div id="questionsContainer">
+                            <div class="question-card card mb-3">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">Question 1</span>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="removeQuestion(this)" disabled>
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Question</label>
+                                        <textarea class="form-control question-text" rows="2" placeholder="Enter your question..."></textarea>
+                                    </div>
+                                    
+                                    <div class="options-container">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-2">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">A</span>
+                                                    <input type="text" class="form-control option-text" placeholder="Option 1">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">B</span>
+                                                    <input type="text" class="form-control option-text" placeholder="Option 2">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">C</span>
+                                                    <input type="text" class="form-control option-text" placeholder="Option 3">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-2">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">D</span>
+                                                    <input type="text" class="form-control option-text" placeholder="Option 4">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Correct Answer</label>
+                                            <select class="form-select correct-answer">
+                                                <option value="0">Option A</option>
+                                                <option value="1">Option B</option>
+                                                <option value="2">Option C</option>
+                                                <option value="3">Option D</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Explanation</label>
+                                            <textarea class="form-control explanation-text" rows="2" placeholder="Why is this correct?"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button class="btn btn-outline-primary me-md-2" onclick="addQuestion()">
+                                <i class="fas fa-plus me-2"></i>Add Question
+                            </button>
+                            <button class="btn btn-success btn-lg" onclick="createQuiz()">
+                                <i class="fas fa-rocket me-2"></i>Create Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="activeQuizSection" style="display: none;">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i>Quiz Created Successfully!</h4>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <h3 id="createdQuizTitle" class="text-success"></h3>
+                            <div class="alert alert-info">
+                                <h5>Share this link with your students:</h5>
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control form-control-lg" id="shareableLink" readonly>
+                                    <button class="btn btn-primary" onclick="copyLink()">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Students can start immediately and work at their own pace</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="fas fa-users me-2"></i>Student Progress</h5>
+                                        <h2 id="studentCount" class="text-primary">0</h2>
+                                        <small class="text-muted">Active Students</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="fas fa-chart-bar me-2"></i>Average Score</h5>
+                                        <h2 id="averageScore" class="text-success">-</h2>
+                                        <small class="text-muted">Track performance</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const socket = io();
+    let currentQuizCode = '';
+
+    function addQuestion() {
+        const container = document.getElementById('questionsContainer');
+        const questionCount = container.children.length;
+        const newQuestion = document.createElement('div');
+        newQuestion.className = 'question-card card mb-3';
+        newQuestion.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold">Question ${questionCount + 1}</span>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeQuestion(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Question</label>
+                    <textarea class="form-control question-text" rows="2" placeholder="Enter your question..."></textarea>
+                </div>
+                
+                <div class="options-container">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <div class="input-group">
+                                <span class="input-group-text">A</span>
+                                <input type="text" class="form-control option-text" placeholder="Option 1">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="input-group">
+                                <span class="input-group-text">B</span>
+                                <input type="text" class="form-control option-text" placeholder="Option 2">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="input-group">
+                                <span class="input-group-text">C</span>
+                                <input type="text" class="form-control option-text" placeholder="Option 3">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="input-group">
+                                <span class="input-group-text">D</span>
+                                <input type="text" class="form-control option-text" placeholder="Option 4">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Correct Answer</label>
+                        <select class="form-select correct-answer">
+                            <option value="0">Option A</option>
+                            <option value="1">Option B</option>
+                            <option value="2">Option C</option>
+                            <option value="3">Option D</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Explanation</label>
+                        <textarea class="form-control explanation-text" rows="2" placeholder="Why is this correct?"></textarea>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(newQuestion);
+    }
+
+    function removeQuestion(button) {
+        if (document.getElementById('questionsContainer').children.length > 1) {
+            button.closest('.question-card').remove();
+            // Update question numbers
+            document.querySelectorAll('.question-card').forEach((card, index) => {
+                card.querySelector('.card-header span').textContent = `Question ${index + 1}`;
+            });
+        }
+    }
+
+    function createQuiz() {
+        const title = document.getElementById('quizTitle').value || 'Classroom Quiz';
+        const questions = [];
+        
+        document.querySelectorAll('.question-card').forEach(card => {
+            const questionText = card.querySelector('.question-text').value;
+            const options = Array.from(card.querySelectorAll('.option-text'))
+                                .map(input => input.value)
+                                .filter(value => value.trim() !== '');
+            const correctAnswer = parseInt(card.querySelector('.correct-answer').value);
+            const explanation = card.querySelector('.explanation-text').value;
+            
+            if (questionText && options.length === 4 && options.every(opt => opt.trim() !== '')) {
+                questions.push({
+                    text: questionText,
+                    options: options,
+                    correct_answer: correctAnswer,
+                    explanation: explanation
+                });
+            }
+        });
+        
+        if (questions.length > 0) {
+            socket.emit('create_quiz', {
+                title: title,
+                questions: questions
+            });
+        } else {
+            alert('Please add at least one valid question with 4 options each.');
+        }
+    }
+
+    function copyLink() {
+        const linkInput = document.getElementById('shareableLink');
+        linkInput.select();
+        document.execCommand('copy');
+        alert('Link copied to clipboard!');
+    }
+
+    socket.on('quiz_created', function(data) {
+        currentQuizCode = data.quiz_code;
+        document.getElementById('createQuizSection').style.display = 'none';
+        document.getElementById('activeQuizSection').style.display = 'block';
+        document.getElementById('createdQuizTitle').textContent = document.getElementById('quizTitle').value || 'Classroom Quiz';
+        document.getElementById('shareableLink').value = window.location.origin + data.share_url;
+        
+        // Join the quiz room to monitor progress
+        socket.emit('join_quiz', { quiz_code: currentQuizCode });
+    });
+
+    socket.on('quiz_results', function(data) {
+        document.getElementById('studentCount').textContent = data.total_students;
+        
+        // Calculate average score
+        if (data.total_students > 0) {
+            const totalScore = Object.values(data.results).reduce((sum, student) => sum + student.score, 0);
+            const average = (totalScore / data.total_students).toFixed(1);
+            document.getElementById('averageScore').textContent = average;
+        }
+    });
+
+    // Refresh results every 5 seconds
+    setInterval(() => {
+        if (currentQuizCode) {
+            socket.emit('get_quiz_results', { quiz_code: currentQuizCode });
+        }
+    }, 5000);
+</script>
+{% endblock %}

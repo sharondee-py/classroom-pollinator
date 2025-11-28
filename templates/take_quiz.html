@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Take Quiz - Classroom Pollinator{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Quiz Header -->
+        <div class="quiz-card bg-white p-4 mb-4">
+            <div class="text-center">
+                <h1 class="h2 fw-bold text-primary" id="quizTitle">
+                    <i class="fas fa-brain me-2"></i>Loading Quiz...
+                </h1>
+                <div class="progress mb-3" style="height: 8px;">
+                    <div id="progressBar" class="progress-bar bg-success" style="width: 0%"></div>
+                </div>
+                <div class="d-flex justify-content-between text-muted">
+                    <small>Question: <span id="currentQuestion">0</span>/<span id="totalQuestions">0</span></small>
+                    <small>Score: <span id="currentScore">0</span> points</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Section -->
+        <div id="questionSection" class="quiz-card bg-white p-4" style="display: none;">
+            <h3 class="mb-4" id="questionText"></h3>
+            
+            <div id="optionsContainer" class="mb-4">
+                <!-- Options will be populated here -->
+            </div>
+            
+            <div class="d-grid">
+                <button id="submitBtn" class="btn btn-primary btn-lg" onclick="submitAnswer()" disabled>
+                    <i class="fas fa-paper-plane me-2"></i>Submit Answer
+                </button>
+            </div>
+        </div>
+
+        <!-- Feedback Section -->
+        <div id="feedbackSection" class="quiz-card bg-white p-4" style="display: none;">
+            <div id="feedbackContent">
+                <!-- Feedback will be populated here -->
+            </div>
+            
+            <div class="text-center mt-4">
+                <button id="nextQuestionBtn" class="btn btn-success btn-lg" onclick="loadNextQuestion()">
+                    <i class="fas fa-arrow-right me-2"></i>Next Question
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="quiz-card bg-white p-4 text-center" style="display: none;">
+            <div class="mb-4">
+                <i class="fas fa-trophy fa-4x text-warning mb-3"></i>
+                <h2 class="text-success">Quiz Completed! 🎉</h2>
+                <p class="lead">Great job! Here's your performance:</p>
+            </div>
+            
+            <div class="row justify-content-center mb-4">
+                <div class="col-md-6">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h3 id="finalScore" class="display-4 fw-bold text-primary">0</h3>
+                            <p class="mb-0">out of <span id="finalTotal">0</span> questions</p>
+                            <div class="mt-2">
+                                <span id="percentageScore" class="badge bg-success fs-6">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <button class="btn btn-outline-primary me-md-2" onclick="location.reload()">
+                    <i class="fas fa-redo me-2"></i>Take Another Quiz
+                </button>
+                <button class="btn btn-primary" onclick="window.close()">
+                    <i class="fas fa-times me-2"></i>Close
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Section -->
+        <div id="loadingSection" class="quiz-card bg-white p-5 text-center">
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4>Loading your quiz...</h4>
+            <p class="text-muted">Getting everything ready for you!</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const socket = io();
+    const quizCode = '{{ quiz_code }}';
+    let currentQuestionIndex = 0;
+    let selectedOption = null;
+    let totalQuestions = 0;
+    let currentScore = 0;
+
+    // Join quiz immediately
+    socket.emit('join_quiz', { quiz_code: quizCode });
+
+    socket.on('quiz_started', function(data) {
+        document.getElementById('loadingSection').style.display = 'none';
+        document.getElementById('questionSection').style.display = 'block';
+        document.getElementById('quizTitle').innerHTML = `<i class="fas fa-brain me-2"></i>${data.title}`;
+        totalQuestions = data.total_questions;
+        
+        loadQuestion(data.first_question, 1);
+    });
+
+    socket.on('next_question', function(data) {
+        document.getElementById('feedbackSection').style.display = 'none';
+        document.getElementById('questionSection').style.display = 'block';
+        currentScore = data.score;
+        loadQuestion(data.question, data.question_number);
+    });
+
+    socket.on('answer_feedback', function(data) {
+        showFeedback(data);
+    });
+
+    socket.on('quiz_completed', function(data) {
+        showFinalResults(data);
+    });
+
+    function loadQuestion(question, questionNumber) {
+        currentQuestionIndex = questionNumber - 1;
+        selectedOption = null;
+        
+        // Update progress
+        document.getElementById('currentQuestion').textContent = questionNumber;
+        document.getElementById('totalQuestions').textContent = totalQuestions;
+        document.getElementById('currentScore').textContent = currentScore;
+        
+        const progressPercent = (questionNumber / totalQuestions) * 100;
+        document.getElementById('progressBar').style.width = `${progressPercent}%`;
+        
+        // Set question text
+        document.getElementById('questionText').textContent = question.text;
+        
+        // Create options
+        const optionsContainer = document.getElementById('optionsContainer');
+        optionsContainer.innerHTML = '';
+        
+        question.options.forEach((option, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-btn';
+            optionDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-secondary me-3">${String.fromCharCode(65 + index)}</span>
+                    <span class="flex-grow-1">${option}</span>
+                </div>
+            `;
+            optionDiv.onclick = () => selectOption(index, optionDiv);
+            optionsContainer.appendChild(optionDiv);
+        });
+        
+        // Reset submit button
+        document.getElementById('submitBtn').disabled = true;
+    }
+
+    function selectOption(index, element) {
+        // Remove selected class from all options
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked option
+        element.classList.add('selected');
+        selectedOption = index;
+        document.getElementById('submitBtn').disabled = false;
+    }
+
+    function submitAnswer() {
+        if (selectedOption !== null) {
+            socket.emit('submit_answer', {
+                quiz_code: quizCode,
+                question_index: currentQuestionIndex,
+                answer_index: selectedOption
+            });
+            
+            // Disable further selection
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+            });
+            document.getElementById('submitBtn').disabled = true;
+        }
+    }
+
+    function showFeedback(data) {
+        document.getElementById('questionSection').style.display = 'none';
+        document.getElementById('feedbackSection').style.display = 'block';
+        
+        const feedbackContent = document.getElementById('feedbackContent');
+        const options = document.querySelectorAll('.option-btn');
+        
+        if (data.is_correct) {
+            feedbackContent.innerHTML = `
+                <div class="alert alert-success">
+                    <h4><i class="fas fa-check-circle me-2"></i>Correct! 🎉</h4>
+                    <p class="mb-0">Well done! You got it right.</p>
+                </div>
+            `;
+        } else {
+            feedbackContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h4><i class="fas fa-times-circle me-2"></i>Not Quite Right</h4>
+                    <p class="mb-2">The correct answer was <strong>${String.fromCharCode(65 + data.correct_answer)}</strong></p>
+                </div>
+            `;
+        }
+        
+        // Add explanation
+        if (data.explanation) {
+            feedbackContent.innerHTML += `
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-lightbulb me-2"></i>Explanation</h5>
+                    <p class="mb-0">${data.explanation}</p>
+                </div>
+            `;
+        }
+        
+        // Highlight options
+        options.forEach((option, index) => {
+            if (index === data.your_answer) {
+                if (data.is_correct) {
+                    option.classList.add('correct-answer');
+                } else {
+                    option.classList.add('incorrect-answer');
+                }
+            } else if (index === data.correct_answer) {
+                option.classList.add('correct-answer');
+            }
+        });
+    }
+
+    function loadNextQuestion() {
+        // The server will send the next question automatically
+        // This button just hides the feedback section temporarily
+        document.getElementById('feedbackSection').style.display = 'none';
+        document.getElementById('questionSection').style.display = 'block';
+    }
+
+    function showFinalResults(data) {
+        document.getElementById('feedbackSection').style.display = 'none';
+        document.getElementById('resultsSection').style.display = 'block';
+        
+        document.getElementById('finalScore').textContent = data.score;
+        document.getElementById('finalTotal').textContent = data.total_questions;
+        document.getElementById('percentageScore').textContent = `${Math.round(data.percentage)}%`;
+        
+        // Update progress bar to 100%
+        document.getElementById('progressBar').style.width = '100%';
+    }
+</script>
+{% endblock %}
