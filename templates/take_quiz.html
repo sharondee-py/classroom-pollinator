@@ -249,42 +249,21 @@
         });
     }
 
-    function loadQuestion(question, questionNumber) {
-    currentQuestionIndex = questionNumber - 1;
-    selectedOption = null;
+    function loadNextQuestion() {
+    // This button just provides a smooth transition
+    // The server should have already sent the next question automatically
+    // If no next question was received, we need to request it manually
 
-    // Update progress
-    document.getElementById('currentQuestion').textContent = questionNumber;
-    document.getElementById('totalQuestions').textContent = totalQuestions;
-    document.getElementById('currentScore').textContent = currentScore;
+    // Hide feedback and show question section
+    document.getElementById('feedbackSection').style.display = 'none';
+    document.getElementById('questionSection').style.display = 'block';
 
-    const progressPercent = (questionNumber / totalQuestions) * 100;
-    document.getElementById('progressBar').style.width = `${progressPercent}%`;
-
-    // Set question text
-    document.getElementById('questionText').textContent = question.text;
-
-    // COMPLETELY CLEAN SLATE for new question
-    const optionsContainer = document.getElementById('optionsContainer');
-    optionsContainer.innerHTML = ''; // This removes ALL old option elements
-
-    // Create fresh options with NO previous styling
-    question.options.forEach((option, index) => {
-        const optionDiv = document.createElement('div');
-        // ONLY the base class - no feedback classes carried over
-        optionDiv.className = 'option-btn';
-        optionDiv.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span class="badge bg-secondary me-3">${String.fromCharCode(65 + index)}</span>
-                <span class="flex-grow-1">${option}</span>
-            </div>
-        `;
-        optionDiv.onclick = () => selectOption(index, optionDiv);
-        optionsContainer.appendChild(optionDiv);
-    });
-
-    // Reset submit button
-    document.getElementById('submitBtn').disabled = true;
+    // If no next question was received within 2 seconds, show a message
+    setTimeout(() => {
+        if (document.getElementById('questionText').textContent === '') {
+            console.log('No next question received - might need manual request');
+        }
+    }, 2000);
 }
 
     function showFinalResults(data) {
