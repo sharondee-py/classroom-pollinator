@@ -144,13 +144,13 @@
         // Set question text
         document.getElementById('questionText').textContent = question.text;
         
-        // Create options
+        // Create options - COMPLETELY RESET the container
         const optionsContainer = document.getElementById('optionsContainer');
-        optionsContainer.innerHTML = '';
-        
+        optionsContainer.innerHTML = ''; // This clears any previous options completely
+
         question.options.forEach((option, index) => {
             const optionDiv = document.createElement('div');
-            optionDiv.className = 'option-btn';
+            optionDiv.className = 'option-btn'; // Start with clean class - no 'selected'
             optionDiv.innerHTML = `
                 <div class="d-flex align-items-center">
                     <span class="badge bg-secondary me-3">${String.fromCharCode(65 + index)}</span>
@@ -160,9 +160,14 @@
             optionDiv.onclick = () => selectOption(index, optionDiv);
             optionsContainer.appendChild(optionDiv);
         });
-        
+
         // Reset submit button
         document.getElementById('submitBtn').disabled = true;
+
+        // Re-enable pointer events (in case they were disabled from previous question)
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.style.pointerEvents = 'auto';
+        });
     }
 
     function selectOption(index, element) {
@@ -170,7 +175,7 @@
         document.querySelectorAll('.option-btn').forEach(btn => {
             btn.classList.remove('selected');
         });
-        
+
         // Add selected class to clicked option
         element.classList.add('selected');
         selectedOption = index;
@@ -184,8 +189,8 @@
                 question_index: currentQuestionIndex,
                 answer_index: selectedOption
             });
-            
-            // Disable further selection
+
+            // Disable further selection for THIS question only
             document.querySelectorAll('.option-btn').forEach(btn => {
                 btn.style.pointerEvents = 'none';
             });
@@ -196,10 +201,10 @@
     function showFeedback(data) {
         document.getElementById('questionSection').style.display = 'none';
         document.getElementById('feedbackSection').style.display = 'block';
-        
+
         const feedbackContent = document.getElementById('feedbackContent');
         const options = document.querySelectorAll('.option-btn');
-        
+
         if (data.is_correct) {
             feedbackContent.innerHTML = `
                 <div class="alert alert-success">
@@ -215,7 +220,7 @@
                 </div>
             `;
         }
-        
+
         // Add explanation
         if (data.explanation) {
             feedbackContent.innerHTML += `
@@ -225,9 +230,13 @@
                 </div>
             `;
         }
-        
-        // Highlight options
+
+        // Highlight options for FEEDBACK only (this doesn't affect next question)
         options.forEach((option, index) => {
+            // First remove any existing feedback classes
+            option.classList.remove('correct-answer', 'incorrect-answer');
+
+            // Then add the appropriate class
             if (index === data.your_answer) {
                 if (data.is_correct) {
                     option.classList.add('correct-answer');
@@ -245,6 +254,9 @@
         // This button just hides the feedback section temporarily
         document.getElementById('feedbackSection').style.display = 'none';
         document.getElementById('questionSection').style.display = 'block';
+
+        // Clear any feedback content
+        document.getElementById('feedbackContent').innerHTML = '';
     }
 
     function showFinalResults(data) {
